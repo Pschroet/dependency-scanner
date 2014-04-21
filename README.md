@@ -1,4 +1,4 @@
-dependency-checker
+dependency-scanner
 ==================
 
 This project aims to create a dependency scanner for various programming languages.
