@@ -57,53 +57,56 @@ def scanJava(file)
 	f.close()
 end
 
-def checkDependencies(directory)
-	#if the passed directory exists
-	if(Dir.exist?(directory))
-		#get a list of files and directories
-		fileList = Dir.entries(directory)
-		#and go through all of them
-		fileList.each{
-			|i|
-			#attach the directory location at the beginning of the file
-			input = directory + File::SEPARATOR + i
-			#if it is a file, it could be one worth checking
-			if(File.file?(input))
-				#and readable...
-				if(File.readable?(input))
-					#if it is a header for C or C++...
-					if(File.extname(input) == ".h" or File.extname(input) == ".hpp")
-						#then scan it for it's dependencies
-						puts "Scanning dependencies of file " + input
-						scanCAndCPP(input)
-					#or a C or C++ source code file
-					elsif(File.extname(input) == ".c" or File.extname(input) == ".cpp")
-						#then scan it for it's dependencies
-						puts "Scanning dependencies of file " + input
-						scanCAndCPP(input)
-					elsif(File.extname(input) == ".java")
-						#then scan it for it's dependencies
-						puts "Scanning dependencies of file " + input
-						scanJava(input)
+def checkDependencies(directories)
+	directories.each{
+		|directory|
+		#if the passed directory exists
+		if(Dir.exist?(directory))
+			#get a list of files and directories
+			fileList = Dir.entries(directory)
+			#and go through all of them
+			fileList.each{
+				|i|
+				#attach the directory location at the beginning of the file
+				input = directory + File::SEPARATOR + i
+				#if it is a file, it could be one worth checking
+				if(File.file?(input))
+					#and readable...
+					if(File.readable?(input))
+						#if it is a header for C or C++...
+						if(File.extname(input) == ".h" or File.extname(input) == ".hpp")
+							#then scan it for it's dependencies
+							puts "Scanning dependencies of file " + input
+							scanCAndCPP(input)
+						#or a C or C++ source code file
+						elsif(File.extname(input) == ".c" or File.extname(input) == ".cpp")
+							#then scan it for it's dependencies
+							puts "Scanning dependencies of file " + input
+							scanCAndCPP(input)
+						elsif(File.extname(input) == ".java")
+							#then scan it for it's dependencies
+							puts "Scanning dependencies of file " + input
+							scanJava(input)
+						else
+							#or skip it
+							puts "Skipping file " + input
+						end
 					else
-						#or skip it
-						puts "Skipping file " + input
+						#else say it is not possible to read it
+						puts "Can't read file " + input
 					end
-				else
-					#else say it is not possible to read it
-					puts "Can't read file " + input
+				#if it is a directory, check the subdirectories
+				elsif(File.directory?(input) and not (i == "." or i == ".." or i.start_with?(".")))
+					puts "Checking directory " + input
+					checkDependencies(Array.new(1, input))
 				end
-			#if it is a directory, check the subdirectories
-			elsif(File.directory?(input) and not (i == "." or i == ".." or i.start_with?(".")))
-				puts "Checking directory " + input
-				checkDependencies(input)
-			end
-		}
-	else
-		#if the directory cannot be found
-		puts "Directory " + directory + " does not exist"
-	end
+			}
+		else
+			#if the directory cannot be found
+			puts "Directory " + directory + " does not exist"
+		end
+	}
 end
 
 #the directory, in which the files will be scanned for their dependencies
-checkDependencies(ARGV.shift)
+checkDependencies(ARGV)
