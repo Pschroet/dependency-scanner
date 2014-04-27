@@ -1,7 +1,12 @@
 #this hash object collects all the dependencies of the project files, the keys are the file names
 $projectDependencies = Hash.new()
 
-def scanCAndCPP(file)
+def scan(file, includeString, removeRegex)
+	isIteratable = false
+	#check if removeRegex can be iterated, e. g. when semicolons and comments need to be removed
+	if(removeRegex.respond_to?(:each))
+		isIteratable = true
+	end
 	#open the file...
 	f = File.open(file, "r")
 	#and read all of it's lines
@@ -15,10 +20,20 @@ def scanCAndCPP(file)
 		#remove newlines and make sure the encoding does not cause problems
 		line = i.chomp.force_encoding("ISO-8859-1").encode("utf-8", replace=nil)
 		#if it matches the style of an include in C or C++
-		if(line.lstrip().start_with?("#include"))
-			dependency = line.sub("#include", "").sub("/[/][/].*/", "").strip()
-			dependencyArray.push(dependency)
-			puts "\t-> line " + counter.to_s + " includes " + dependency
+		if(line.lstrip().start_with?(includeString))
+			if(isIteratable)
+				dependency = line.sub(includeString, "").strip()
+				removeRegex.each{
+					|remove|
+					dependency = line.sub(remove, "")
+				}
+				dependencyArray.push(dependency)
+				puts "\t-> line " + counter.to_s + ": dependency to " + dependency
+			else
+				dependency = line.sub(includeString, "").sub(removeRegex, "").strip()
+				dependencyArray.push(dependency)
+				puts "\t-> line " + counter.to_s + ": dependency to " + dependency
+			end
 		end
 		counter+=1
 	}
@@ -27,90 +42,22 @@ def scanCAndCPP(file)
 	end
 	$projectDependencies[file] = dependencyArray
 	f.close()
+end
+
+def scanCAndCPP(file)
+	scan(file, "#include", "/[/][/].*/")
 end
 
 def scanJava(file)
-	#open the file...
-	f = File.open(file, "r")
-	#and read all of it's lines
-	lines = File.readlines(file)
-	#counter to show the number of the current line
-	counter = 1
-	#show if the current file has any dependencies
-	dependencyArray = Array.new()
-	lines.each{
-		|i|
-		#remove newlines and make sure the encoding does not cause problems
-		line = i.chomp.force_encoding("ISO-8859-1").encode("utf-8", replace=nil)
-		#if it matches the style of an import in Java
-		if(line.lstrip().start_with?("import"))
-			dependency = line.sub("import", "").sub(";", "").sub("/[/][/].*/", "").strip()
-			dependencyArray.push(dependency)
-			puts "\t-> line " + counter.to_s + " imports " + dependency
-		end
-		counter+=1
-	}
-	if(dependencyArray.length() == 0)
-		puts "\t-> this file has no dependencies"
-	end
-	$projectDependencies[file] = dependencyArray
-	f.close()
+	scan(file, "import", ["/[/][/].*/", ";"])
 end
 
 def scanRuby(file)
-	#open the file...
-	f = File.open(file, "r")
-	#and read all of it's lines
-	lines = File.readlines(file)
-	#counter to show the number of the current line
-	counter = 1
-	#show if the current file has any dependencies
-	dependencyArray = Array.new()
-	lines.each{
-		|i|
-		#remove newlines and make sure the encoding does not cause problems
-		line = i.chomp.force_encoding("ISO-8859-1").encode("utf-8", replace=nil)
-		#if it matches the style of an import in Java
-		if(line.lstrip().start_with?("require"))
-			dependency = line.sub("require", "").sub("/[#].*/", "").strip()
-			dependencyArray.push(dependency)
-			puts "\t-> line " + counter.to_s + " imports " + dependency
-		end
-		counter+=1
-	}
-	if(dependencyArray.length() == 0)
-		puts "\t-> this file has no dependencies"
-	end
-	$projectDependencies[file] = dependencyArray
-	f.close()
+	scan(file, "require", "/[#].*/")
 end
 
 def scanPython(file)
-	#open the file...
-	f = File.open(file, "r")
-	#and read all of it's lines
-	lines = File.readlines(file)
-	#counter to show the number of the current line
-	counter = 1
-	#show if the current file has any dependencies
-	dependencyArray = Array.new()
-	lines.each{
-		|i|
-		#remove newlines and make sure the encoding does not cause problems
-		line = i.chomp.force_encoding("ISO-8859-1").encode("utf-8", replace=nil)
-		#if it matches the style of an import in Java
-		if(line.lstrip().start_with?("import"))
-			dependency = line.sub("import", "").sub("/[#].*/", "").strip()
-			dependencyArray.push(dependency)
-			puts "\t-> line " + counter.to_s + " imports " + dependency
-		end
-		counter+=1
-	}
-	if(dependencyArray.length() == 0)
-		puts "\t-> this file has no dependencies"
-	end
-	$projectDependencies[file] = dependencyArray
-	f.close()
+	scan(file, "import", "/[#].*/")
 end
 
 def checkDependencies(directories)
