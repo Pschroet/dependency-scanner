@@ -8,7 +8,5 @@ Supported programming languages and file extensions so far:
 - C: .h, .c
 - C++: .hpp, .cpp
 - Java: .java
-
-Planned progamming languages:
-- Ruby
-- Python
+- Ruby: .rb
+- Python: .py
