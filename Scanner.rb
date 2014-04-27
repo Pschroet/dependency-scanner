@@ -15,8 +15,8 @@ def scanCAndCPP(file)
 		#remove newlines and make sure the encoding does not cause problems
 		line = i.chomp.force_encoding("ISO-8859-1").encode("utf-8", replace=nil)
 		#if it matches the style of an include in C or C++
-		if(line.start_with?("#include"))
-			dependency = line.sub("#include", "").strip()
+		if(line.lstrip().start_with?("#include"))
+			dependency = line.sub("#include", "").sub("/[/][/].*/", "").strip()
 			dependencyArray.push(dependency)
 			puts "\t-> line " + counter.to_s + " includes " + dependency
 		end
@@ -43,8 +43,64 @@ def scanJava(file)
 		#remove newlines and make sure the encoding does not cause problems
 		line = i.chomp.force_encoding("ISO-8859-1").encode("utf-8", replace=nil)
 		#if it matches the style of an import in Java
-		if(line.start_with?("import"))
-			dependency = line.sub("import", "").sub(";", "").strip()
+		if(line.lstrip().start_with?("import"))
+			dependency = line.sub("import", "").sub(";", "").sub("/[/][/].*/", "").strip()
+			dependencyArray.push(dependency)
+			puts "\t-> line " + counter.to_s + " imports " + dependency
+		end
+		counter+=1
+	}
+	if(dependencyArray.length() == 0)
+		puts "\t-> this file has no dependencies"
+	end
+	$projectDependencies[file] = dependencyArray
+	f.close()
+end
+
+def scanRuby(file)
+	#open the file...
+	f = File.open(file, "r")
+	#and read all of it's lines
+	lines = File.readlines(file)
+	#counter to show the number of the current line
+	counter = 1
+	#show if the current file has any dependencies
+	dependencyArray = Array.new()
+	lines.each{
+		|i|
+		#remove newlines and make sure the encoding does not cause problems
+		line = i.chomp.force_encoding("ISO-8859-1").encode("utf-8", replace=nil)
+		#if it matches the style of an import in Java
+		if(line.lstrip().start_with?("require"))
+			dependency = line.sub("require", "").sub("/[#].*/", "").strip()
+			dependencyArray.push(dependency)
+			puts "\t-> line " + counter.to_s + " imports " + dependency
+		end
+		counter+=1
+	}
+	if(dependencyArray.length() == 0)
+		puts "\t-> this file has no dependencies"
+	end
+	$projectDependencies[file] = dependencyArray
+	f.close()
+end
+
+def scanPython(file)
+	#open the file...
+	f = File.open(file, "r")
+	#and read all of it's lines
+	lines = File.readlines(file)
+	#counter to show the number of the current line
+	counter = 1
+	#show if the current file has any dependencies
+	dependencyArray = Array.new()
+	lines.each{
+		|i|
+		#remove newlines and make sure the encoding does not cause problems
+		line = i.chomp.force_encoding("ISO-8859-1").encode("utf-8", replace=nil)
+		#if it matches the style of an import in Java
+		if(line.lstrip().start_with?("import"))
+			dependency = line.sub("import", "").sub("/[#].*/", "").strip()
 			dependencyArray.push(dependency)
 			puts "\t-> line " + counter.to_s + " imports " + dependency
 		end
@@ -87,6 +143,14 @@ def checkDependencies(directories)
 							#then scan it for it's dependencies
 							puts "Scanning dependencies of file " + input
 							scanJava(input)
+						elsif(File.extname(input) == ".rb")
+							#then scan it for it's dependencies
+							puts "Scanning dependencies of file " + input
+							scanRuby(input)
+						elsif(File.extname(input) == ".py")
+							#then scan it for it's dependencies
+							puts "Scanning dependencies of file " + input
+							scanPython(input)
 						else
 							#or skip it
 							puts "Skipping file " + input
