@@ -19,13 +19,13 @@ def scan(file, includeString, removeRegex)
 		|i|
 		#remove newlines and make sure the encoding does not cause problems
 		line = i.chomp.force_encoding("ISO-8859-1").encode("utf-8", replace=nil)
-		#if it matches the style of an include in C or C++
+		#if it matches the style of the given include string
 		if(line.lstrip().start_with?(includeString))
 			if(isIteratable)
 				dependency = line.sub(includeString, "").strip()
 				removeRegex.each{
 					|remove|
-					dependency = line.sub(remove, "")
+					dependency = dependency.sub(remove, "")
 				}
 				dependencyArray.push(dependency)
 				puts "\t-> line " + counter.to_s + ": dependency to " + dependency
@@ -45,19 +45,19 @@ def scan(file, includeString, removeRegex)
 end
 
 def scanCAndCPP(file)
-	scan(file, "#include", "/[/][/].*/")
+	scan(file, "#include", /\s+[\/][\/].+/)
 end
 
 def scanJava(file)
-	scan(file, "import", ["/[/][/].*/", ";"])
+	scan(file, "import", [/\s+[\/][\/].*/, ";"])
 end
 
 def scanRuby(file)
-	scan(file, "require", "/[#].*/")
+	scan(file, "require", /\s+[#].*/)
 end
 
 def scanPython(file)
-	scan(file, "import", "/[#].*/")
+	scan(file, "import", /\s+[#].*/)
 end
 
 def checkDependencies(directories)
