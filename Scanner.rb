@@ -86,20 +86,23 @@ def checkDependencies(directories)
 							#then scan it for it's dependencies
 							puts "Scanning dependencies of file " + input
 							scanCAndCPP(input)
+						#or a Java source code file
 						elsif(File.extname(input) == ".java")
 							#then scan it for it's dependencies
 							puts "Scanning dependencies of file " + input
 							scanJava(input)
+						#or a Ruby source code file
 						elsif(File.extname(input) == ".rb")
 							#then scan it for it's dependencies
 							puts "Scanning dependencies of file " + input
 							scanRuby(input)
+						#or a Python source code file
 						elsif(File.extname(input) == ".py")
 							#then scan it for it's dependencies
 							puts "Scanning dependencies of file " + input
 							scanPython(input)
+						#if it is not a supported file, skip it
 						else
-							#or skip it
 							puts "Skipping file " + input
 						end
 					else
