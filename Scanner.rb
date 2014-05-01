@@ -44,80 +44,66 @@ def scan(file, includeString, removeRegex)
 	f.close()
 end
 
-def scanCAndCPP(file)
-	scan(file, "#include", /\s+[\/][\/].+/)
+def checkFileExtension(inputFile)
+	#if it is a header or source code file for C or C++...
+	if(File.extname(inputFile) == ".h" or File.extname(inputFile) == ".hpp" or File.extname(inputFile) == ".c" or File.extname(inputFile) == ".cpp")
+		#then scan it for it's dependencies
+		puts "Scanning dependencies of file " + inputFile
+		scan(inputFile, "#include", /\s+[\/][\/].+/)
+	#or a Java source code file
+	elsif(File.extname(inputFile) == ".java")
+		#then scan it for it's dependencies
+		puts "Scanning dependencies of file " + inputFile
+		scan(inputFile, "import", [/\s+[\/][\/].*/, ";"])
+	#or a Ruby source code file
+	elsif(File.extname(inputFile) == ".rb")
+		#then scan it for it's dependencies
+		puts "Scanning dependencies of file " + inputFile
+		scan(inputFile, "require", /\s+[#].*/)
+	#or a Python source code file
+	elsif(File.extname(inputFile) == ".py")
+		#then scan it for it's dependencies
+		puts "Scanning dependencies of file " + inputFile
+		scan(inputFile, "import", /\s+[#].*/)
+	#if it is not a supported file, skip it
+	else
+		puts "Skipping file " + inputFile
+	end
 end
-
-def scanJava(file)
-	scan(file, "import", [/\s+[\/][\/].*/, ";"])
-end
-
-def scanRuby(file)
-	scan(file, "require", /\s+[#].*/)
-end
-
-def scanPython(file)
-	scan(file, "import", /\s+[#].*/)
-end
-
-def checkDependencies(directories)
-	directories.each{
-		|directory|
-		#if the passed directory exists
-		if(Dir.exist?(directory))
+	
+def checkDependencies(args)
+	args.each{
+		|input|
+		#if the passed input is an existing directory
+		if(Dir.exist?(input))
 			#get a list of files and directories
-			fileList = Dir.entries(directory)
+			fileList = Dir.entries(input)
 			#and go through all of them
 			fileList.each{
 				|i|
 				#attach the directory location at the beginning of the file
-				input = directory + File::SEPARATOR + i
+				fileListElement = input + File::SEPARATOR + i
 				#if it is a file, it could be one worth checking
-				if(File.file?(input))
+				if(File.file?(fileListElement))
 					#and readable...
-					if(File.readable?(input))
-						#if it is a header for C or C++...
-						if(File.extname(input) == ".h" or File.extname(input) == ".hpp")
-							#then scan it for it's dependencies
-							puts "Scanning dependencies of file " + input
-							scanCAndCPP(input)
-						#or a C or C++ source code file
-						elsif(File.extname(input) == ".c" or File.extname(input) == ".cpp")
-							#then scan it for it's dependencies
-							puts "Scanning dependencies of file " + input
-							scanCAndCPP(input)
-						#or a Java source code file
-						elsif(File.extname(input) == ".java")
-							#then scan it for it's dependencies
-							puts "Scanning dependencies of file " + input
-							scanJava(input)
-						#or a Ruby source code file
-						elsif(File.extname(input) == ".rb")
-							#then scan it for it's dependencies
-							puts "Scanning dependencies of file " + input
-							scanRuby(input)
-						#or a Python source code file
-						elsif(File.extname(input) == ".py")
-							#then scan it for it's dependencies
-							puts "Scanning dependencies of file " + input
-							scanPython(input)
-						#if it is not a supported file, skip it
-						else
-							puts "Skipping file " + input
-						end
+					if(File.readable?(fileListElement))
+						checkFileExtension(fileListElement)
 					else
 						#else say it is not possible to read it
-						puts "Can't read file " + input
+						puts "Can't read file " + fileListElement
 					end
 				#if it is a directory, check the subdirectories
-				elsif(File.directory?(input) and not (i == "." or i == ".." or i.start_with?(".")))
-					puts "Checking directory " + input
-					checkDependencies(Array.new(1, input))
+				elsif(File.directory?(fileListElement) and not (i == "." or i == ".." or i.start_with?(".")))
+					puts "Checking directory " + fileListElement
+					checkDependencies(Array.new(1, fileListElement))
 				end
 			}
+		#if it is an existing  file
+		elsif(File.exist?(input))
+			checkFileExtension(input)
 		else
-			#if the directory cannot be found
-			puts "Directory " + directory + " does not exist"
+			#if the directory or file cannot be found
+			puts "Directory " + input + " does not exist"
 		end
 	}
 end
