@@ -10,3 +10,7 @@ Supported programming languages and file extensions so far:
 - Java: .java
 - Ruby: .rb
 - Python: .py
+
+
+Usage:
+ruby Scanner.rb <directory-or-file-to-be-scanned> [<directory-or-file-to-be-scanned> ...]
