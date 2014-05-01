@@ -8,7 +8,9 @@ Supported programming languages and file extensions so far:
 - C: .h, .c
 - C++: .hpp, .cpp
 - Java: .java
+- Ruby: .rb
+- Python: .py
 
-Planned progamming languages:
-- Ruby
-- Python
+
+Usage:
+ruby Scanner.rb <directory-or-file-to-be-scanned> [<directory-or-file-to-be-scanned> ...]
