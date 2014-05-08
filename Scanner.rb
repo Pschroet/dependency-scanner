@@ -72,40 +72,44 @@ def checkFileExtension(inputFile)
 end
 	
 def checkDependencies(args)
-	args.each{
-		|input|
-		#if the passed input is an existing directory
-		if(Dir.exist?(input))
-			#get a list of files and directories
-			fileList = Dir.entries(input)
-			#and go through all of them
-			fileList.each{
-				|i|
-				#attach the directory location at the beginning of the file
-				fileListElement = input + File::SEPARATOR + i
-				#if it is a file, it could be one worth checking
-				if(File.file?(fileListElement))
-					#and readable...
-					if(File.readable?(fileListElement))
-						checkFileExtension(fileListElement)
-					else
-						#else say it is not possible to read it
-						puts "Can't read file " + fileListElement
+	if(args.length < 1)
+		puts "One or more files or directories must be given as arguments"
+	else
+		args.each{
+			|input|
+			#if the passed input is an existing directory
+			if(Dir.exist?(input))
+				#get a list of files and directories
+				fileList = Dir.entries(input)
+				#and go through all of them
+				fileList.each{
+					|i|
+					#attach the directory location at the beginning of the file
+					fileListElement = input + File::SEPARATOR + i
+					#if it is a file, it could be one worth checking
+					if(File.file?(fileListElement))
+						#and readable...
+						if(File.readable?(fileListElement))
+							checkFileExtension(fileListElement)
+						else
+							#else say it is not possible to read it
+							puts "Can't read file " + fileListElement
+						end
+					#if it is a directory, check the subdirectories
+					elsif(File.directory?(fileListElement) and not (i == "." or i == ".." or i.start_with?(".")))
+						puts "Checking directory " + fileListElement
+						checkDependencies(Array.new(1, fileListElement))
 					end
-				#if it is a directory, check the subdirectories
-				elsif(File.directory?(fileListElement) and not (i == "." or i == ".." or i.start_with?(".")))
-					puts "Checking directory " + fileListElement
-					checkDependencies(Array.new(1, fileListElement))
-				end
-			}
-		#if it is an existing  file
-		elsif(File.exist?(input))
-			checkFileExtension(input)
-		else
-			#if the directory or file cannot be found
-			puts "Directory " + input + " does not exist"
-		end
-	}
+				}
+			#if it is an existing  file
+			elsif(File.exist?(input))
+				checkFileExtension(input)
+			else
+				#if the directory or file cannot be found
+				puts "Directory " + input + " does not exist"
+			end
+		}
+	end
 end
 
 #the directory, in which the files will be scanned for their dependencies
