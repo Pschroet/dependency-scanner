@@ -1,7 +1,7 @@
 #this hash object collects all the dependencies of the project files, the keys are the file names
 $projectDependencies = Hash.new()
 
-def scan(file, includeString, removeRegex, situationRegex)
+def scan(file, includeString, removeRegex, situationStartRegex, situationEndRegex)
 	isIteratable = false
 	#check if removeRegex can be iterated, e. g. when semicolons and comments need to be removed
 	if(removeRegex.respond_to?(:each))
@@ -30,15 +30,15 @@ def scan(file, includeString, removeRegex, situationRegex)
 				}
 				dependencyArray.push(dependency)
 				puts "\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine
-				ifLine = ""
 			else
 				dependency = line.sub(includeString, "").sub(removeRegex, "").strip()
 				dependencyArray.push(dependency)
 				puts "\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine
-				ifLine = ""
 			end
-		elsif(line.lstrip().start_with?(situationRegex))
-			ifLine = line.sub(situationRegex, " when")
+		elsif(situationStartRegex != "" && line.lstrip().start_with?(situationStartRegex))
+			ifLine = line.sub(situationStartRegex, " when")
+		elsif(ifLine != "" && line.lstrip().start_with?(situationEndRegex))
+			ifLine = ""
 		end
 		counter+=1
 	}
@@ -54,28 +54,28 @@ def checkFileExtension(inputFile)
 	if(File.extname(inputFile) == ".h" or File.extname(inputFile) == ".hpp" or File.extname(inputFile) == ".c" or File.extname(inputFile) == ".cpp")
 		#then scan it for it's dependencies
 		puts "Scanning dependencies of file " + inputFile
-		scan(inputFile, "#include", /\s+[\/][\/].+/, "#ifdef")
+		scan(inputFile, "#include", /\s+[\/][\/].+/, "#ifdef", "#endif")
 	#or a Java source code file
 	elsif(File.extname(inputFile) == ".java")
 		#then scan it for it's dependencies
 		puts "Scanning dependencies of file " + inputFile
-		scan(inputFile, "import", [/\s+[\/][\/].*/, ";"], "")
+		scan(inputFile, "import", [/\s+[\/][\/].*/, ";"], "", "")
 	#or a Ruby source code file
 	elsif(File.extname(inputFile) == ".rb")
 		#then scan it for it's dependencies
 		puts "Scanning dependencies of file " + inputFile
-		scan(inputFile, "require", /\s+[#].*/, "")
+		scan(inputFile, "require", /\s+[#].*/, "", "")
 	#or a Python source code file
 	elsif(File.extname(inputFile) == ".py")
 		#then scan it for it's dependencies
 		puts "Scanning dependencies of file " + inputFile
-		scan(inputFile, "import", /\s+[#].*/, "")
+		scan(inputFile, "import", /\s+[#].*/, "", "")
 	#if it is not a supported file, skip it
 	else
 		puts "Skipping file " + inputFile
 	end
 end
-	
+
 def checkDependencies(args)
 	if(args.length < 1)
 		puts "One or more files or directories must be given as arguments"
