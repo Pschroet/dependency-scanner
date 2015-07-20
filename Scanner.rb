@@ -3,11 +3,14 @@ require 'optparse'
 #this hash object collects all the dependencies of the project files, the keys are the file names
 $projectDependencies = Hash.new()
 $save2File = false
-$file
+$file = ""
 $options = {}
+$quiet = false
 
 def putOut(output)
-	puts output
+	if(!$quiet)
+		puts output
+	end
 	if($save2File)
 		$file.write(output + $/)
 	end
@@ -84,7 +87,9 @@ def checkFileExtension(inputFile)
 		scan(inputFile, "import", /\s+[#].*/, "", "")
 	#if it is not a supported file, skip it
 	else
-		puts "Skipping file " + inputFile
+		if(!$quiet)
+			puts "Skipping file " + inputFile
+		end
 	end
 end
 
@@ -110,11 +115,15 @@ def checkDependencies(args)
 							checkFileExtension(fileListElement)
 						else
 							#else say it is not possible to read it
-							puts "Can't read file " + fileListElement
+							if(!$quiet)
+								puts "Can't read file " + fileListElement
+							end
 						end
 					#if it is a directory, check the subdirectories
 					elsif(File.directory?(fileListElement) and not (i == "." or i == ".." or i.start_with?(".")))
-						puts "Checking directory " + fileListElement
+						if(!$quiet)
+							puts "Checking directory " + fileListElement
+						end
 						checkDependencies(Array.new(1, fileListElement))
 					end
 				}
@@ -122,36 +131,38 @@ def checkDependencies(args)
 			elsif(File.exist?(input))
 				checkFileExtension(input)
 			else
-				#if the directory or file cannot be found
-				puts "Directory " + input + " does not exist"
+				if(!$quiet)
+					#if the directory or file cannot be found
+					puts "Directory " + input + " does not exist"
+				end
 			end
 		}
 	end
-end
-
-def setSavingFile(file)
-	$save2File = true
-	if(File.file?(file))
-		puts "Writing to existing file " + file + "\n-> will be overwritten"
-	else
-		puts "Writing to file " + file
-	end
-	$file = File.new(file,  "w+")
 end
 
 def parse(args)
 	opt_parser = OptionParser.new do |opts|
 		opts.banner = "Usage: Scanner.rb [options] file [files...]"
 		opts.on("-s [FILE]", "--save [FILE]", "Saves to file [FILE]") do |file|
-			#$options[:save] = file
-			setSavingFile(file)
+			$save2File = true
+			$file = File.new(file,  "w+")
+		end
+		opts.on("-q", "--quiet", "Do not show output on console") do
+			$quiet = true
 		end
 	end
+	
 	opt_parser.parse!(args)
 end
 
-#the directory, in which the files will be scanned for their dependencies
-#checkDependencies(ARGV)
+#parse the given options
 $options = parse(ARGV)
-
+#announce if the output should be saved into a file, but only if the program does not run quietly
+if(!$quiet && $save2File)
+	puts "Writing to file " + File.absolute_path($file)
+	if(File.file?($file))
+		puts "-> exists and will be overwritten"
+	end
+end
+#run through the given files and directories
 checkDependencies($options)
