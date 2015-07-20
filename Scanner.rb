@@ -1,5 +1,17 @@
+require 'optparse'
+
 #this hash object collects all the dependencies of the project files, the keys are the file names
 $projectDependencies = Hash.new()
+$save2File = false
+$file
+$options = {}
+
+def putOut(output)
+	puts output
+	if($save2File)
+		$file.write(output + $/)
+	end
+end
 
 def scan(file, includeString, removeRegex, situationStartRegex, situationEndRegex)
 	isIteratable = false
@@ -29,11 +41,11 @@ def scan(file, includeString, removeRegex, situationStartRegex, situationEndRege
 					dependency = dependency.sub(remove, "")
 				}
 				dependencyArray.push(dependency)
-				puts "\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine
+				putOut("\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine)
 			else
 				dependency = line.sub(includeString, "").sub(removeRegex, "").strip()
 				dependencyArray.push(dependency)
-				puts "\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine
+				putOut("\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine)
 			end
 		elsif(situationStartRegex != "" && line.lstrip().start_with?(situationStartRegex))
 			ifLine = line.sub(situationStartRegex, " when")
@@ -43,7 +55,7 @@ def scan(file, includeString, removeRegex, situationStartRegex, situationEndRege
 		counter+=1
 	}
 	if(dependencyArray.length() == 0)
-		puts "\t-> this file has no dependencies"
+		putOut("\t-> this file has no dependencies")
 	end
 	$projectDependencies[file] = dependencyArray
 	f.close()
@@ -53,22 +65,22 @@ def checkFileExtension(inputFile)
 	#if it is a header or source code file for C or C++...
 	if(File.extname(inputFile) == ".h" or File.extname(inputFile) == ".hpp" or File.extname(inputFile) == ".c" or File.extname(inputFile) == ".cpp")
 		#then scan it for it's dependencies
-		puts "Scanning dependencies of file " + inputFile
+		putOut("Scanning dependencies of file " + inputFile)
 		scan(inputFile, "#include", /\s+[\/][\/].+/, "#ifdef", "#endif")
 	#or a Java source code file
 	elsif(File.extname(inputFile) == ".java")
 		#then scan it for it's dependencies
-		puts "Scanning dependencies of file " + inputFile
+		putOut("Scanning dependencies of file " + inputFile)
 		scan(inputFile, "import", [/\s+[\/][\/].*/, ";"], "", "")
 	#or a Ruby source code file
 	elsif(File.extname(inputFile) == ".rb")
 		#then scan it for it's dependencies
-		puts "Scanning dependencies of file " + inputFile
+		putOut("Scanning dependencies of file " + inputFile)
 		scan(inputFile, "require", /\s+[#].*/, "", "")
 	#or a Python source code file
 	elsif(File.extname(inputFile) == ".py")
 		#then scan it for it's dependencies
-		puts "Scanning dependencies of file " + inputFile
+		putOut("Scanning dependencies of file " + inputFile)
 		scan(inputFile, "import", /\s+[#].*/, "", "")
 	#if it is not a supported file, skip it
 	else
@@ -117,5 +129,29 @@ def checkDependencies(args)
 	end
 end
 
+def setSavingFile(file)
+	$save2File = true
+	if(File.file?(file))
+		puts "Writing to existing file " + file + "\n-> will be overwritten"
+	else
+		puts "Writing to file " + file
+	end
+	$file = File.new(file,  "w+")
+end
+
+def parse(args)
+	opt_parser = OptionParser.new do |opts|
+		opts.banner = "Usage: Scanner.rb [options] file [files...]"
+		opts.on("-s [FILE]", "--save [FILE]", "Saves to file [FILE]") do |file|
+			#$options[:save] = file
+			setSavingFile(file)
+		end
+	end
+	opt_parser.parse!(args)
+end
+
 #the directory, in which the files will be scanned for their dependencies
-checkDependencies(ARGV)
+#checkDependencies(ARGV)
+$options = parse(ARGV)
+
+checkDependencies($options)
