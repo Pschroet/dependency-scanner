@@ -13,4 +13,13 @@ Supported programming languages and file extensions so far:
 
 
 Usage:
-ruby Scanner.rb <directory-or-file-to-be-scanned> [<directory-or-file-to-be-scanned> ...]
+ruby Scanner.rb [OPTIONS] <directory-or-file-to-be-scanned> [<directory-or-file-to-be-scanned> ...]
+
+Possible options are:
+- -s [FILE], --save [FILE]
+
+Saves the dependencies into file FILE
+
+- -q, --quiet
+
+Suppresses all output
