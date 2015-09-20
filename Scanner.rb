@@ -16,12 +16,20 @@ def putOut(output)
 	end
 end
 
-def scan(file, includeString, removeRegex, situationStartRegex, situationEndRegex)
-	isIteratable = false
-	#check if removeRegex can be iterated, e. g. when semicolons and comments need to be removed
-	if(removeRegex.respond_to?(:each))
-		isIteratable = true
+def isIterable(input)
+	if(input.respond_to?(:each))
+		return true
+	else
+		return false
 	end
+end
+
+def scan(file, includeString, removeRegex, situationStartRegex, situationEndRegex)
+	#check which of the regex strings can be iterated, e. g. in removeRegex when semicolons and comments need to be removed
+	includeStringIsIteratable = isIterable(includeString)
+	removeRegexIsIteratable = isIterable(removeRegex)
+	situationStartRegexIsIteratable = isIterable(situationStartRegex)
+	situationEndRegexIsIteratable = isIterable(situationEndRegex)
 	#open the file...
 	f = File.open(file, "r")
 	#and read all of it's lines
@@ -37,7 +45,7 @@ def scan(file, includeString, removeRegex, situationStartRegex, situationEndRege
 		line = i.chomp.force_encoding("ISO-8859-1").encode("utf-8", replace=nil)
 		#if it matches the style of the given include string
 		if(line.lstrip().start_with?(includeString))
-			if(isIteratable)
+			if(removeRegexIsIteratable)
 				dependency = line.sub(includeString, "").strip()
 				removeRegex.each{
 					|remove|
@@ -69,7 +77,7 @@ def checkFileExtension(inputFile)
 	if(File.extname(inputFile) == ".h" or File.extname(inputFile) == ".hpp" or File.extname(inputFile) == ".c" or File.extname(inputFile) == ".cpp")
 		#then scan it for it's dependencies
 		putOut("Scanning dependencies of file " + inputFile)
-		scan(inputFile, "#include", /\s+[\/][\/].+/, "#ifdef", "#endif")
+		scan(inputFile, "#include", /\s+[\/][\/].+/, ["#ifdef", "#ifndef"], "#endif")
 	#or a Java source code file
 	elsif(File.extname(inputFile) == ".java")
 		#then scan it for it's dependencies
@@ -87,9 +95,7 @@ def checkFileExtension(inputFile)
 		scan(inputFile, "import", /\s+[#].*/, "", "")
 	#if it is not a supported file, skip it
 	else
-		if(!$quiet)
-			puts "Skipping file " + inputFile
-		end
+		putOut("Skipping file " + inputFile)
 	end
 end
 
@@ -115,15 +121,11 @@ def checkDependencies(args)
 							checkFileExtension(fileListElement)
 						else
 							#else say it is not possible to read it
-							if(!$quiet)
-								puts "Can't read file " + fileListElement
-							end
+							putOut("Can't read file " + fileListElement)
 						end
 					#if it is a directory, check the subdirectories
 					elsif(File.directory?(fileListElement) and not (i == "." or i == ".." or i.start_with?(".")))
-						if(!$quiet)
-							puts "Checking directory " + fileListElement
-						end
+						putOut("Checking directory " + fileListElement)
 						checkDependencies(Array.new(1, fileListElement))
 					end
 				}
@@ -131,10 +133,8 @@ def checkDependencies(args)
 			elsif(File.exist?(input))
 				checkFileExtension(input)
 			else
-				if(!$quiet)
-					#if the directory or file cannot be found
-					puts "Directory " + input + " does not exist"
-				end
+				#if the directory or file cannot be found
+				putOut("Directory " + input + " does not exist")
 			end
 		}
 	end
@@ -158,10 +158,10 @@ end
 #parse the given options
 $options = parse(ARGV)
 #announce if the output should be saved into a file, but only if the program does not run quietly
-if(!$quiet && $save2File)
-	puts "Writing to file " + File.absolute_path($file)
+if($save2File)
+	putOut("Writing to file " + File.absolute_path($file))
 	if(File.file?($file))
-		puts "-> exists and will be overwritten"
+		putOut("-> exists and will be overwritten")
 	end
 end
 #run through the given files and directories
