@@ -7,6 +7,7 @@ $file = ""
 $options = {}
 $quiet = false
 
+#echos the given output, if output in general is not prevented by using '-q' or '--quiet'
 def putOut(output)
 	if(!$quiet)
 		puts output
@@ -16,6 +17,9 @@ def putOut(output)
 	end
 end
 
+#check if an object is iterable
+# returns true, if the given object responds to 'each'
+# returns false, otherwise
 def isIterable(input)
 	if(input.respond_to?(:each))
 		return true
@@ -72,6 +76,7 @@ def scan(file, includeString, removeRegex, situationStartRegex, situationEndRege
 	f.close()
 end
 
+#checks if the given file is supported and if it is, then it will be scanned for dependencies
 def checkFileExtension(inputFile)
 	#if it is a header or source code file for C or C++...
 	if(File.extname(inputFile) == ".h" or File.extname(inputFile) == ".hpp" or File.extname(inputFile) == ".c" or File.extname(inputFile) == ".cpp")
@@ -99,6 +104,7 @@ def checkFileExtension(inputFile)
 	end
 end
 
+#goes through the given directories and if files are found, they will be passed to 'checkFileExtension'
 def checkDependencies(args)
 	if(args.length < 1)
 		puts "One or more files or directories must be given as arguments"
@@ -140,7 +146,11 @@ def checkDependencies(args)
 	end
 end
 
+#parse the arguments, looks for the following
+# -s and --save: output will be saved into a file
+# -q and --quiet: output will not be shown on the console
 def parse(args)
+  #add the possible arguments to the argument parser
 	opt_parser = OptionParser.new do |opts|
 		opts.banner = "Usage: Scanner.rb [options] file [files...]"
 		opts.on("-s [FILE]", "--save [FILE]", "Saves to file [FILE]") do |file|
@@ -151,7 +161,7 @@ def parse(args)
 			$quiet = true
 		end
 	end
-	
+	#start the parsing of the arguments
 	opt_parser.parse!(args)
 end
 
