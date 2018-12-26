@@ -1,4 +1,4 @@
-require 'optparse'
+require "optparse"
 
 #this hash object collects all the dependencies of the project files, the keys are the file names
 $projectDependencies = Hash.new()
@@ -6,10 +6,11 @@ $save2File = false
 $file = ""
 $options = {}
 $quiet = false
+$verbose = false
 
 #echos the given output, if output in general is not prevented by using '-q' or '--quiet'
-def putOut(output)
-	if(!$quiet)
+def putOut(output, isVerbose=true)
+	if((!$quiet && !isVerbose) || (isVerbose && $verbose))
 		puts output
 	end
 	if($save2File)
@@ -56,11 +57,11 @@ def scan(file, includeString, removeRegex, situationStartRegex, situationEndRege
 					dependency = dependency.sub(remove, "")
 				}
 				dependencyArray.push(dependency)
-				putOut("\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine)
+				putOut("\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine, false)
 			else
 				dependency = line.sub(includeString, "").sub(removeRegex, "").strip()
 				dependencyArray.push(dependency)
-				putOut("\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine)
+				putOut("\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine, false)
 			end
 		elsif(situationStartRegex != "" && line.lstrip().start_with?(situationStartRegex))
 			ifLine = line.sub(situationStartRegex, " when")
@@ -70,7 +71,7 @@ def scan(file, includeString, removeRegex, situationStartRegex, situationEndRege
 		counter+=1
 	}
 	if(dependencyArray.length() == 0)
-		putOut("\t-> this file has no dependencies")
+		putOut("\t-> this file has no dependencies", false)
 	end
 	$projectDependencies[file] = dependencyArray
 	f.close()
@@ -81,26 +82,26 @@ def checkFileExtension(inputFile)
 	#if it is a header or source code file for C or C++...
 	if(File.extname(inputFile) == ".h" or File.extname(inputFile) == ".hpp" or File.extname(inputFile) == ".c" or File.extname(inputFile) == ".cpp")
 		#then scan it for it's dependencies
-		putOut("Scanning dependencies of file " + inputFile)
+		putOut("Scanning dependencies of file " + inputFile, false)
 		scan(inputFile, "#include", /\s+[\/][\/].+/, ["#ifdef", "#ifndef"], "#endif")
 	#or a Java source code file
 	elsif(File.extname(inputFile) == ".java")
 		#then scan it for it's dependencies
-		putOut("Scanning dependencies of file " + inputFile)
+		putOut("Scanning dependencies of file " + inputFile, false)
 		scan(inputFile, "import", [/\s+[\/][\/].*/, ";"], "", "")
 	#or a Ruby source code file
 	elsif(File.extname(inputFile) == ".rb")
 		#then scan it for it's dependencies
-		putOut("Scanning dependencies of file " + inputFile)
+		putOut("Scanning dependencies of file " + inputFile, false)
 		scan(inputFile, "require", /\s+[#].*/, "", "")
 	#or a Python source code file
 	elsif(File.extname(inputFile) == ".py")
 		#then scan it for it's dependencies
-		putOut("Scanning dependencies of file " + inputFile)
+		putOut("Scanning dependencies of file " + inputFile, false)
 		scan(inputFile, "import", /\s+[#].*/, "", "")
 	#if it is not a supported file, skip it
 	else
-		putOut("Skipping file " + inputFile)
+		putOut("Skipping file " + inputFile, true)
 	end
 end
 
@@ -127,11 +128,11 @@ def checkDependencies(args)
 							checkFileExtension(fileListElement)
 						else
 							#else say it is not possible to read it
-							putOut("Can't read file " + fileListElement)
+							putOut("Can't read file " + fileListElement, false)
 						end
 					#if it is a directory, check the subdirectories
 					elsif(File.directory?(fileListElement) and not (i == "." or i == ".." or i.start_with?(".")))
-						putOut("Checking directory " + fileListElement)
+						putOut("Checking directory " + fileListElement, false)
 						checkDependencies(Array.new(1, fileListElement))
 					end
 				}
@@ -140,7 +141,7 @@ def checkDependencies(args)
 				checkFileExtension(input)
 			else
 				#if the directory or file cannot be found
-				putOut("Directory " + input + " does not exist")
+				putOut("Directory " + input + " does not exist", false)
 			end
 		}
 	end
@@ -160,6 +161,9 @@ def parse(args)
 		opts.on("-q", "--quiet", "Do not show output on console") do
 			$quiet = true
 		end
+    opts.on("-v", "--verbose", "Show additional output on the console, overwrites quiet") do
+      $verbose = true
+    end
 	end
 	#start the parsing of the arguments
 	opt_parser.parse!(args)
@@ -169,9 +173,9 @@ end
 $options = parse(ARGV)
 #announce if the output should be saved into a file, but only if the program does not run quietly
 if($save2File)
-	putOut("Writing to file " + File.absolute_path($file))
+	putOut("Writing to file " + File.absolute_path($file), false)
 	if(File.file?($file))
-		putOut("-> exists and will be overwritten")
+		putOut("-> exists and will be overwritten", true)
 	end
 end
 #run through the given files and directories
