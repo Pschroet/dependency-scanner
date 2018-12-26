@@ -9,6 +9,8 @@ $quiet = false
 $verbose = false
 
 #echos the given output, if output in general is not prevented by using '-q' or '--quiet'
+#some messages will be filtered out (when the method is called with true as second argument)
+# if the global variable verbose is set to false
 def putOut(output, isVerbose=true)
 	if((!$quiet && !isVerbose) || (isVerbose && $verbose))
 		puts output
@@ -150,6 +152,7 @@ end
 #parse the arguments, looks for the following
 # -s and --save: output will be saved into a file
 # -q and --quiet: output will not be shown on the console
+# -v and --verbose: fewer output will be shown (only those with false as second argument in putOut)
 def parse(args)
   #add the possible arguments to the argument parser
 	opt_parser = OptionParser.new do |opts|
