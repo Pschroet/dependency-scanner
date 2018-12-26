@@ -16,7 +16,7 @@ def putOut(output, isVerbose=true)
 		puts output
 	end
 	if($save2File)
-		$file.write(output + $/)
+		$file.write("[" + Time.now.to_s + "] " + output + $/)
 	end
 end
 
