@@ -5,6 +5,9 @@ require "pathname"
 $projectDependencies = Hash.new()
 $save2File = false
 $file = ""
+$save2XML = true
+$xmlFile = ""
+$xmlText = ""
 $options = {}
 $quiet = false
 $verbose = false
@@ -19,6 +22,12 @@ def putOut(output, isVerbose=true)
 	if($save2File)
 		$file.write("[" + Time.now.to_s + "] " + output + $/)
 	end
+end
+
+def writeDependencies2XML()
+  if($save2XML)
+    $xmlFile.write($xmlText)
+  end
 end
 
 #check if an object is iterable
@@ -61,10 +70,12 @@ def scan(file, includeString, removeRegex, situationStartRegex, situationEndRege
 				}
 				dependencyArray.push(dependency)
 				putOut("\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine, false)
+        $xmlText += "<Dependency><File name=\"" + dependency + "\"></File></Dependency>" + $/
 			else
 				dependency = line.sub(includeString, "").sub(removeRegex, "").strip()
 				dependencyArray.push(dependency)
 				putOut("\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine, false)
+        $xmlText += "<Dependency><File name=\"" + dependency + "\"></File></Dependency>" + $/
 			end
 		elsif(situationStartRegex != "" && line.lstrip().start_with?(situationStartRegex))
 			ifLine = line.sub(situationStartRegex, " when")
@@ -86,22 +97,30 @@ def checkFileExtension(inputFile)
 	if(File.extname(inputFile) == ".h" or File.extname(inputFile) == ".hpp" or File.extname(inputFile) == ".c" or File.extname(inputFile) == ".cpp")
 		#then scan it for it's dependencies
 		putOut("Scanning dependencies of file " + inputFile, false)
+		$xmlText += "<File name=\"" + inputFile + "\" type=\"" + File.extname(inputFile) + "\">" + $/
 		scan(inputFile, "#include", /\s+[\/][\/].+/, ["#ifdef", "#ifndef"], "#endif")
+		$xmlText += "</File>" + $/
 	#or a Java source code file
 	elsif(File.extname(inputFile) == ".java")
 		#then scan it for it's dependencies
 		putOut("Scanning dependencies of file " + inputFile, false)
+    $xmlText += "<File name=\"" + inputFile + "\" type=\"" + File.extname(inputFile) + "\">" + $/
 		scan(inputFile, "import", [/\s+[\/][\/].*/, ";"], "", "")
+    $xmlText += "</File>" + $/
 	#or a Ruby source code file
 	elsif(File.extname(inputFile) == ".rb")
 		#then scan it for it's dependencies
 		putOut("Scanning dependencies of file " + inputFile, false)
+    $xmlText += "<File name=\"" + inputFile + "\" type=\"" + File.extname(inputFile) + "\">" + $/
 		scan(inputFile, "require", /\s+[#].*/, "", "")
+    $xmlText += "</File>" + $/
 	#or a Python source code file
 	elsif(File.extname(inputFile) == ".py")
 		#then scan it for it's dependencies
 		putOut("Scanning dependencies of file " + inputFile, false)
+    $xmlText += "<File name=\"" + inputFile + "\" type=\"" + File.extname(inputFile) + "\">" + $/
 		scan(inputFile, "import", /\s+[#].*/, "", "")
+    $xmlText += "</File>" + $/
 	#if it is not a supported file, skip it
 	else
 		putOut("Skipping file " + inputFile, true)
@@ -148,6 +167,9 @@ def checkDependencies(args)
 			end
 		}
 	end
+  if($save2XML)
+    writeDependencies2XML()
+  end
 end
 
 #parse the arguments, looks for the following
@@ -162,6 +184,10 @@ def parse(args)
 			$save2File = true
 			$file = File.new(Pathname.new(file).realpath,  "w+")
 		end
+    opts.on("-x [FILE]", "--xml [FILE]", "Saves to XML file [FILE]") do |file|
+      $save2XML = true
+      $xmlFile = File.new(Pathname.new(file).realpath,  "w+")
+    end
 		opts.on("-q", "--quiet", "Do not show output on console") do
 			$quiet = true
 		end
@@ -181,6 +207,13 @@ if($save2File)
 	if(File.file?($file))
 		putOut("-> exists and will be overwritten", true)
 	end
+end
+
+if($save2XML)
+  putOut("Writing XML formatted to file " + File.absolute_path($xmlFile), false)
+  if(File.file?($xmlFile))
+    putOut("-> exists and will be overwritten", true)
+  end
 end
 #run through the given files and directories
 checkDependencies($options)
