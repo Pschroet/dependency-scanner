@@ -1,4 +1,5 @@
 require "optparse"
+require "pathname"
 
 #this hash object collects all the dependencies of the project files, the keys are the file names
 $projectDependencies = Hash.new()
@@ -122,7 +123,7 @@ def checkDependencies(args)
 				fileList.each{
 					|i|
 					#attach the directory location at the beginning of the file
-					fileListElement = input + File::SEPARATOR + i
+					fileListElement = Pathname.new(input + File::SEPARATOR + i).realpath.to_s
 					#if it is a file, it could be one worth checking
 					if(File.file?(fileListElement))
 						#and readable...
@@ -159,7 +160,7 @@ def parse(args)
 		opts.banner = "Usage: Scanner.rb [options] file [files...]"
 		opts.on("-s [FILE]", "--save [FILE]", "Saves to file [FILE]") do |file|
 			$save2File = true
-			$file = File.new(file,  "w+")
+			$file = File.new(Pathname.new(file).realpath,  "w+")
 		end
 		opts.on("-q", "--quiet", "Do not show output on console") do
 			$quiet = true
