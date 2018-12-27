@@ -23,3 +23,11 @@ Saves the dependencies into file FILE
 - -q, --quiet
 
 Suppresses all output
+
+- -x [FILE], --xml [FILE]
+
+Saves dependencies into a XML formatted file
+
+- -v, --verbose
+
+Generates additional output
