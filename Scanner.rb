@@ -5,7 +5,7 @@ require "pathname"
 $projectDependencies = Hash.new()
 $save2File = false
 $file = ""
-$save2XML = true
+$save2XML = false
 $xmlFile = ""
 $xmlText = ""
 $options = {}
@@ -25,9 +25,7 @@ def putOut(output, isVerbose=true)
 end
 
 def writeDependencies2XML()
-  if($save2XML)
-    $xmlFile.write($xmlText)
-  end
+  $xmlFile.write($xmlText)
 end
 
 #check if an object is iterable
