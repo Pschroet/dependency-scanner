@@ -41,12 +41,16 @@ def isIterable(input)
 	end
 end
 
-def scan(file, includeString, removeRegex, situationStartRegex, situationEndRegex)
+#scan the given file for the include string line by line
+# removeRegex can be a string as well as an iterable object
+# - removeRegex can be used for parts of the include that are not part of the include keyword, but need to be removed to get
+#  only the dependency itself
+def scan(file, includeString, removeRegex=nil)
 	#check which of the regex strings can be iterated, e. g. in removeRegex when semicolons and comments need to be removed
 	includeStringIsIteratable = isIterable(includeString)
-	removeRegexIsIteratable = isIterable(removeRegex)
-	situationStartRegexIsIteratable = isIterable(situationStartRegex)
-	situationEndRegexIsIteratable = isIterable(situationEndRegex)
+	if(removeRegex != nil && removeRegex != "")
+	  removeRegexIsIteratable = isIterable(removeRegex)
+	end
 	#open the file...
 	f = File.open(file, "r")
 	#and read all of it's lines
@@ -62,7 +66,8 @@ def scan(file, includeString, removeRegex, situationStartRegex, situationEndRege
 		line = i.chomp.force_encoding("ISO-8859-1").encode("utf-8", replace=nil)
 		#if it matches the style of the given include string
 		if(line.lstrip().start_with?(includeString))
-			if(removeRegexIsIteratable)
+			#if there is more than one keyword to be removed, remove them one after another
+		  if(removeRegexIsIteratable)
 				dependency = line.sub(includeString, "").strip()
 				removeRegex.each{
 					|remove|
@@ -71,16 +76,13 @@ def scan(file, includeString, removeRegex, situationStartRegex, situationEndRege
 				dependencyArray.push(dependency)
 				putOut("\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine, false)
         $xmlText += "<Dependency><File name=\"" + dependency + "\"></File></Dependency>" + $/
+      #if there is only one keyword, just remove it
 			else
 				dependency = line.sub(includeString, "").sub(removeRegex, "").strip()
 				dependencyArray.push(dependency)
 				putOut("\t-> line " + counter.to_s + ": dependency to " + dependency + ifLine, false)
         $xmlText += "<Dependency><File name=\"" + dependency + "\"></File></Dependency>" + $/
 			end
-		elsif(situationStartRegex != "" && line.lstrip().start_with?(situationStartRegex))
-			ifLine = line.sub(situationStartRegex, " when")
-		elsif(ifLine != "" && line.lstrip().start_with?(situationEndRegex))
-			ifLine = ""
 		end
 		counter+=1
 	}
@@ -98,28 +100,28 @@ def checkFileExtension(inputFile)
 		#then scan it for it's dependencies
 		putOut("Scanning dependencies of file " + inputFile, false)
 		$xmlText += "<File name=\"" + inputFile + "\" type=\"" + File.extname(inputFile) + "\">" + $/
-		scan(inputFile, "#include", /\s+[\/][\/].+/, ["#ifdef", "#ifndef"], "#endif")
+		scan(inputFile, "#include", /\s+[\/][\/].+/)
 		$xmlText += "</File>" + $/
 	#or a Java source code file
 	elsif(File.extname(inputFile) == ".java")
 		#then scan it for it's dependencies
 		putOut("Scanning dependencies of file " + inputFile, false)
     $xmlText += "<File name=\"" + inputFile + "\" type=\"" + File.extname(inputFile) + "\">" + $/
-		scan(inputFile, "import", [/\s+[\/][\/].*/, ";"], "", "")
+		scan(inputFile, "import", [/\s+[\/][\/].*/, ";"])
     $xmlText += "</File>" + $/
 	#or a Ruby source code file
 	elsif(File.extname(inputFile) == ".rb")
 		#then scan it for it's dependencies
 		putOut("Scanning dependencies of file " + inputFile, false)
     $xmlText += "<File name=\"" + inputFile + "\" type=\"" + File.extname(inputFile) + "\">" + $/
-		scan(inputFile, "require", /\s+[#].*/, "", "")
+		scan(inputFile, "require", /\s+[#].*/)
     $xmlText += "</File>" + $/
 	#or a Python source code file
 	elsif(File.extname(inputFile) == ".py")
 		#then scan it for it's dependencies
 		putOut("Scanning dependencies of file " + inputFile, false)
     $xmlText += "<File name=\"" + inputFile + "\" type=\"" + File.extname(inputFile) + "\">" + $/
-		scan(inputFile, "import", /\s+[#].*/, "", "")
+		scan(inputFile, "import", /\s+[#].*/)
     $xmlText += "</File>" + $/
 	#if it is not a supported file, skip it
 	else
